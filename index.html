@@ -3,9 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Event Snap</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Event Snap - Batch Scanner</title>
+    <script src="https://cdn-tailwindcss.vercel.app/"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Vercel Web Analytics -->
+    <script>
+      window.va = window.va || function () { (window.va.q = window.va.q || []).push(arguments); };
+    </script>
+    <script src="/_vercel/insights/script.js" defer></script>
+    <!-- End Vercel Web Analytics -->
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -23,160 +29,206 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        /* Custom file input */
         .file-input-button {
             cursor: pointer;
             display: inline-flex;
             align-items: center;
             justify-content: center;
         }
-        /* Hide default file input */
         input[type="file"] {
             display: none;
         }
+        @keyframes fade-in-out {
+            0%, 100% { opacity: 0; transform: translateY(20px); }
+            10%, 90% { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-out {
+            animation: fade-in-out 3s ease-in-out forwards;
+        }
     </style>
 </head>
-<body class="bg-gray-900 text-white min-h-screen flex flex-col items-center justify-center p-4">
+<body class="bg-gray-900 text-white min-h-screen flex flex-col items-center p-4">
 
     <div class="w-full max-w-md mx-auto">
         <!-- Header -->
         <header class="text-center mb-8">
             <h1 class="text-4xl font-bold text-blue-400">Event Snap</h1>
-            <p class="text-gray-400 mt-2">Snap a flyer, add to calendar. It's that simple.</p>
+            <p class="text-gray-400 mt-2">Batch scan multiple flyers and add them all at once.</p>
         </header>
 
         <main id="main-content" class="bg-gray-800 rounded-2xl shadow-2xl p-6 transition-all duration-300">
             <!-- Initial State: Upload Button -->
             <div id="upload-section">
-                <p class="text-center text-gray-300 mb-4">Upload a picture of an event flyer or poster.</p>
+                <p class="text-center text-gray-300 mb-4">Select one or more event flyers to scan.</p>
                 <label for="image-upload" class="file-input-button w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-transform transform hover:scale-105 shadow-lg">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
-                    <span>Select Image</span>
+                    <span>Select Image(s)</span>
                 </label>
-                <input type="file" id="image-upload" accept="image/*">
+                <input type="file" id="image-upload" accept="image/*" multiple>
             </div>
 
-            <!-- Image Preview -->
-            <div id="preview-section" class="hidden text-center">
-                 <img id="image-preview" src="#" alt="Event Flyer Preview" class="max-w-full mx-auto rounded-lg mb-4 max-h-64 shadow-md">
+            <!-- Batch Preview Section -->
+            <div id="batch-preview-section" class="hidden">
+                <h2 class="text-xl font-semibold mb-4 text-center">Your Selected Flyers</h2>
+                <div id="image-preview-grid" class="grid grid-cols-3 sm:grid-cols-4 gap-4 mb-4">
+                    <!-- Image previews and the 'Add More' button will be inserted here -->
+                </div>
+                <button id="process-batch-btn" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg transition-transform transform hover:scale-105 shadow-lg">Process Flyers</button>
+                 <button type="button" id="clear-selection-btn" class="w-full mt-2 bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg">Clear Selection</button>
             </div>
-
+            
             <!-- Loading State -->
             <div id="loading-section" class="hidden flex-col items-center justify-center text-center p-8">
                 <div class="loader"></div>
-                <p class="mt-4 text-gray-400">Scanning for event details...</p>
+                <p id="loading-text" class="mt-4 text-gray-400">Scanning flyers...</p>
             </div>
 
             <!-- Results State: Extracted Details Form -->
             <div id="results-section" class="hidden">
-                <h2 class="text-2xl font-semibold mb-4 text-center">Review & Confirm Event</h2>
-                <form id="event-form" class="space-y-4">
-                    <div>
-                        <label for="event-title" class="block text-sm font-medium text-gray-300">Title</label>
-                        <input type="text" id="event-title" class="w-full mt-1 bg-gray-700 border-gray-600 rounded-md shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500 text-white" placeholder="e.g., Summer Music Festival">
-                    </div>
-                    <div>
-                        <label for="event-date" class="block text-sm font-medium text-gray-300">Date</label>
-                        <input type="date" id="event-date" class="w-full mt-1 bg-gray-700 border-gray-600 rounded-md shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500 text-white" placeholder="YYYY-MM-DD">
-                    </div>
-                    <div>
-                        <label for="event-time" class="block text-sm font-medium text-gray-300">Time</label>
-                        <input type="time" id="event-time" class="w-full mt-1 bg-gray-700 border-gray-600 rounded-md shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500 text-white" placeholder="HH:MM">
-                    </div>
-                    <div>
-                        <label for="event-location" class="block text-sm font-medium text-gray-300">Location</label>
-                        <input type="text" id="event-location" class="w-full mt-1 bg-gray-700 border-gray-600 rounded-md shadow-sm p-3 focus:ring-blue-500 focus:border-blue-500 text-white" placeholder="e.g., Central Park">
-                    </div>
-                    <button type="submit" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-transform transform hover:scale-105 shadow-lg flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path><path d="m9 16 2 2 4-4"></path></svg>
-                        Add to Calendar
-                    </button>
-                    <button type="button" id="start-over-btn" class="w-full mt-2 bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg transition-transform transform hover:scale-105 shadow-lg">Scan Another</button>
-                </form>
+                <h2 class="text-2xl font-semibold mb-4 text-center">Review & Confirm Events</h2>
+                <div id="event-forms-container" class="space-y-6">
+                    <!-- Event forms will be dynamically inserted here -->
+                </div>
+                <button id="add-all-btn" class="w-full mt-6 bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-transform transform hover:scale-105 shadow-lg flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-3"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path><path d="m9 16 2 2 4-4"></path></svg>
+                    Add All to Calendar
+                </button>
+                <button type="button" id="start-over-btn" class="w-full mt-2 bg-gray-600 hover:bg-gray-700 text-white font-bold py-3 px-6 rounded-lg transition-transform transform hover:scale-105 shadow-lg">Scan More</button>
             </div>
             
             <!-- Error State -->
             <div id="error-section" class="hidden text-center p-8">
-                <p class="text-red-400 font-semibold">Could not extract event details.</p>
+                <p class="text-red-400 font-semibold">Could not extract event details from one or more images.</p>
                 <p class="text-gray-400 mt-2">Please try another image or ensure the text is clear.</p>
                  <button type="button" id="try-again-btn" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Try Again</button>
             </div>
         </main>
         
-        <!-- Future Improvements Section -->
-        <footer id="improvements-section" class="mt-10 text-center hidden">
-            <h3 class="text-xl font-semibold text-gray-300"></h3>
-            <ul class="text-gray-400 mt-3 space-y-2 list-disc list-inside text-left max-w-xs mx-auto">
-            </ul>
-        </footer>
     </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-4 right-4 space-y-2 z-50"></div>
 
     <script>
         const uploadSection = document.getElementById('upload-section');
-        const previewSection = document.getElementById('preview-section');
-        const imagePreview = document.getElementById('image-preview');
+        const batchPreviewSection = document.getElementById('batch-preview-section');
+        const imagePreviewGrid = document.getElementById('image-preview-grid');
         const loadingSection = document.getElementById('loading-section');
+        const loadingText = document.getElementById('loading-text');
         const resultsSection = document.getElementById('results-section');
+        const eventFormsContainer = document.getElementById('event-forms-container');
         const errorSection = document.getElementById('error-section');
-        const improvementsSection = document.getElementById('improvements-section');
 
         const imageUpload = document.getElementById('image-upload');
-        const eventForm = document.getElementById('event-form');
+        const processBatchBtn = document.getElementById('process-batch-btn');
+        const clearSelectionBtn = document.getElementById('clear-selection-btn');
+        const addAllBtn = document.getElementById('add-all-btn');
         const startOverBtn = document.getElementById('start-over-btn');
         const tryAgainBtn = document.getElementById('try-again-btn');
+        
+        let selectedFiles = []; // Will store objects: { file, hash }
 
         // --- Main Application Logic ---
-
-        imageUpload.addEventListener('change', handleImageUpload);
-        eventForm.addEventListener('submit', handleFormSubmit);
+        imageUpload.addEventListener('change', handleImageSelection);
+        processBatchBtn.addEventListener('click', handleProcessBatch);
+        clearSelectionBtn.addEventListener('click', resetUI);
+        addAllBtn.addEventListener('click', handleAddAllToCalendar);
         startOverBtn.addEventListener('click', resetUI);
         tryAgainBtn.addEventListener('click', resetUI);
 
         function resetUI() {
             uploadSection.classList.remove('hidden');
-            previewSection.classList.add('hidden');
+            batchPreviewSection.classList.add('hidden');
             loadingSection.classList.add('hidden');
             resultsSection.classList.add('hidden');
             errorSection.classList.add('hidden');
-            improvementsSection.classList.add('hidden');
-            imagePreview.src = '#';
-            eventForm.reset();
+            imagePreviewGrid.innerHTML = '';
+            eventFormsContainer.innerHTML = '';
+            selectedFiles = [];
+            imageUpload.value = ''; // Clear file input
         }
 
-        async function handleImageUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+        async function handleImageSelection(event) {
+            const newFiles = Array.from(event.target.files);
+            if (newFiles.length === 0) return;
 
-            // Show image preview
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                imagePreview.src = e.target.result;
-                uploadSection.classList.add('hidden');
-                previewSection.classList.remove('hidden');
-                loadingSection.classList.remove('hidden');
-                extractEventDetails(file);
+            uploadSection.classList.add('hidden');
+            batchPreviewSection.classList.add('hidden');
+            loadingSection.classList.remove('hidden');
+            loadingText.textContent = 'Adding photos...';
+
+            const existingHashes = new Set(selectedFiles.map(item => item.hash));
+
+            for (const file of newFiles) {
+                try {
+                    const hash = await calculateHash(file);
+                    if (!existingHashes.has(hash)) {
+                        existingHashes.add(hash);
+                        selectedFiles.push({ file, hash });
+                    } else {
+                        showToast("Duplicate image ignored.");
+                    }
+                } catch (error) {
+                    console.error("Could not hash file:", file.name, error);
+                    selectedFiles.push({ file, hash: null }); // Add anyway if hashing fails
+                }
             }
-            reader.readAsDataURL(file);
+            
+            imageUpload.value = '';
+            renderPreviews();
+            
+            loadingSection.classList.add('hidden');
+            batchPreviewSection.classList.remove('hidden');
+        }
+
+        function renderPreviews() {
+            imagePreviewGrid.innerHTML = '';
+
+            selectedFiles.forEach(item => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.className = 'w-full h-24 object-cover rounded-md shadow-md';
+                    imagePreviewGrid.appendChild(img);
+                }
+                reader.readAsDataURL(item.file);
+            });
+
+            const addMoreButtonHTML = `
+                <label for="image-upload" class="w-full h-24 bg-gray-700 rounded-md flex items-center justify-center cursor-pointer border-2 border-dashed border-gray-500 hover:bg-gray-600 hover:border-blue-500 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                </label>
+            `;
+            imagePreviewGrid.innerHTML += addMoreButtonHTML;
+            processBatchBtn.textContent = `Process ${selectedFiles.length} Flyer(s)`;
+        }
+        
+        async function handleProcessBatch() {
+            batchPreviewSection.classList.add('hidden');
+            loadingSection.classList.remove('hidden');
+            loadingText.textContent = `Scanning ${selectedFiles.length} flyer(s)...`;
+
+            const filesToProcess = selectedFiles.map(item => item.file);
+            const promises = filesToProcess.map(file => extractEventDetails(file));
+            const results = await Promise.allSettled(promises);
+
+            populateBatchResults(results);
         }
 
         async function extractEventDetails(file) {
             const base64ImageData = await toBase64(file);
 
-            const apiKey = "AIzaSyDPtjjJUPONz8fmzLTIR1zZ28tinFNGacg"; // API key is handled by the environment
+            const apiKey = "AIzaSyDPtjjJUPONz8fmzLTIR1zZ28tinFNGacg"; // IMPORTANT: Add your Google AI API Key here
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
             
-            const prompt = `From the attached image of an event flyer, extract the event details. Provide the output in a clean JSON format. The JSON object should have the following keys: "title" (string), "date" (string, formatted as YYYY-MM-DD), "time" (string, formatted as HH:MM in 24-hour format), and "location" (string). If a detail is not found, its value should be an empty string.`;
+            const prompt = `From the attached image of an event flyer, extract the event details. Provide the output in a clean JSON format. The JSON object should have the following keys: "title" (string), "date" (string, formatted as YYYY-MM-DD), "time" (string, formatted as HH:MM in 24-hour format), "location" (string), and "description" (string, a short summary of the event). If a detail is not found, its value should be an empty string.`;
             
             const payload = {
                 contents: [{
                     parts: [
                         { text: prompt },
-                        {
-                            inlineData: {
-                                mimeType: file.type,
-                                data: base64ImageData
-                            }
-                        }
+                        { inlineData: { mimeType: file.type, data: base64ImageData } }
                     ]
                 }],
                 generationConfig: {
@@ -184,122 +236,184 @@
                     responseSchema: {
                         type: "OBJECT",
                         properties: {
-                            "title": { "type": "STRING" },
-                            "date": { "type": "STRING" },
-                            "time": { "type": "STRING" },
-                            "location": { "type": "STRING" }
+                            title: { type: "STRING" },
+                            date: { type: "STRING" },
+                            time: { type: "STRING" },
+                            location: { type: "STRING" },
+                            description: { type: "STRING" }
                         },
-                        required: ["title", "date", "time", "location"]
+                        required: ["title", "date", "time", "location", "description"]
                     }
                 }
             };
             
-            try {
-                let response;
-                let backoff = 1000; // Start with 1 second
-                for (let i = 0; i < 5; i++) { // Retry up to 5 times
-                    response = await fetch(apiUrl, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(payload)
-                    });
-
-                    if (response.ok) break; // Success
-                    
-                    console.warn(`API call failed with status ${response.status}. Retrying in ${backoff}ms...`);
-                    await new Promise(resolve => setTimeout(resolve, backoff));
-                    backoff *= 2; // Exponential backoff
-                }
-
-
-                if (!response.ok) {
-                    throw new Error(`API call failed after retries with status: ${response.status}`);
-                }
-
-                const result = await response.json();
-
-                const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
-
-                if (!text) {
-                     throw new Error("Invalid response structure from API.");
-                }
-
-                const eventDetails = JSON.parse(text);
-                populateForm(eventDetails);
-
-            } catch (error) {
-                console.error("Error extracting details:", error);
-                showErrorState();
+            let response;
+            let backoff = 1000;
+            for (let i = 0; i < 3; i++) {
+                response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (response.ok) break;
+                await new Promise(resolve => setTimeout(resolve, backoff));
+                backoff *= 2;
             }
+
+            if (!response.ok) throw new Error(`API call failed with status: ${response.status}`);
+            const result = await response.json();
+            const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+            if (!text) throw new Error("Invalid response structure from API.");
+            
+            return JSON.parse(text);
         }
 
-        function populateForm(details) {
+        // New helper function for more robust de-duplication
+        function generateEventKey(details) {
+            const keyString = `${details.title || ''}${details.date || ''}${details.location || ''}`;
+            // Converts to lowercase and removes all non-alphanumeric characters for a better match
+            return keyString.toLowerCase().replace(/[^a-z0-9]/g, '');
+        }
+
+        function populateBatchResults(results) {
             loadingSection.classList.add('hidden');
             resultsSection.classList.remove('hidden');
-            improvementsSection.classList.remove('hidden');
-            document.getElementById('event-title').value = details.title || '';
-            document.getElementById('event-date').value = details.date || '';
-            document.getElementById('event-time').value = details.time || '';
-            document.getElementById('event-location').value = details.location || '';
-        }
+            eventFormsContainer.innerHTML = '';
 
-        function showErrorState() {
-            loadingSection.classList.add('hidden');
-            errorSection.classList.remove('hidden');
-            previewSection.classList.remove('hidden');
-        }
+            let successfulScans = 0;
+            const uniqueEvents = new Set(); // Set to track unique event content
 
-        function handleFormSubmit(event) {
-            event.preventDefault();
+            results.forEach((result, index) => {
+                const formId = `event-form-${index}`;
+                let formHtml;
 
-            const title = document.getElementById('event-title').value;
-            const date = document.getElementById('event-date').value;
-            const time = document.getElementById('event-time').value;
-            const location = document.getElementById('event-location').value;
+                if (result.status === 'fulfilled' && result.value) {
+                    const details = result.value;
+                    const eventKey = generateEventKey(details);
 
-            if (!title || !date) {
-                alert("Please provide at least an event title and date.");
-                return;
+                    if (uniqueEvents.has(eventKey)) {
+                        showToast(`Duplicate event ignored: "${details.title || 'Untitled'}"`);
+                        return;
+                    }
+                    uniqueEvents.add(eventKey);
+
+                    successfulScans++;
+                    formHtml = `
+                        <div class="bg-gray-700 p-4 rounded-lg shadow-md border border-gray-600">
+                             <p class="text-sm font-semibold text-blue-300 mb-2">Event #${successfulScans}</p>
+                            <form id="${formId}" class="space-y-3 event-form-data">
+                                <textarea data-field="title" class="w-full bg-gray-600 border-gray-500 rounded-md p-2 text-white resize-none" placeholder="Title" rows="2">${details.title || ''}</textarea>
+                                <input type="date" data-field="date" class="w-full bg-gray-600 border-gray-500 rounded-md p-2 text-white" value="${details.date || ''}">
+                                <input type="time" data-field="time" class="w-full bg-gray-600 border-gray-500 rounded-md p-2 text-white" value="${details.time || ''}">
+                                <textarea data-field="location" class="w-full bg-gray-600 border-gray-500 rounded-md p-2 text-white resize-none" placeholder="Location" rows="2">${details.location || ''}</textarea>
+                                <textarea data-field="description" class="w-full bg-gray-600 border-gray-500 rounded-md p-2 text-white resize-none" placeholder="Description" rows="4">${details.description || ''}</textarea>
+                            </form>
+                        </div>
+                    `;
+                } else {
+                     formHtml = `
+                        <div class="bg-red-900 bg-opacity-30 p-4 rounded-lg border border-red-500">
+                            <p class="font-semibold text-red-400">Flyer scan failed</p>
+                            <p class="text-sm text-gray-400">${result.reason?.message || 'Could not process image.'}</p>
+                        </div>
+                    `;
+                }
+                eventFormsContainer.innerHTML += formHtml;
+            });
+
+            if(successfulScans === 0) {
+                resultsSection.classList.add('hidden');
+                errorSection.classList.remove('hidden');
             }
-            
-            // Combine date and time for start date
-            const startTime = time ? `T${time.replace(':', '')}00` : '';
-            const startDate = `${date.replace(/-/g, '')}${startTime}`;
+        }
+        
+        function handleAddAllToCalendar() {
+            const forms = document.querySelectorAll('.event-form-data');
+            if (forms.length === 0) return;
 
-            // Assume 1 hour duration for simplicity
-            let endDate = startDate;
-            if (time) {
-                const [hours, minutes] = time.split(':');
-                const endDateObj = new Date(`${date}T${time}`);
-                endDateObj.setHours(endDateObj.getHours() + 1);
-                const endHours = String(endDateObj.getHours()).padStart(2, '0');
-                const endMinutes = String(endDateObj.getMinutes()).padStart(2, '0');
-                endDate = `${date.replace(/-/g, '')}T${endHours}${endMinutes}00`;
+            let icsContent = `BEGIN:VCALENDAR\nVERSION:2.0\n`;
+
+            forms.forEach(form => {
+                const title = form.querySelector('[data-field="title"]').value;
+                const date = form.querySelector('[data-field="date"]').value;
+                const time = form.querySelector('[data-field="time"]').value;
+                const location = form.querySelector('[data-field="location"]').value;
+                const description = form.querySelector('[data-field="description"]').value;
+
+                if (title && date) {
+                     const startTime = time ? `T${time.replace(':', '')}00` : '';
+                    const startDate = `${date.replace(/-/g, '')}${startTime}`;
+
+                    let endDate = startDate;
+                    if (time) {
+                        const endDateObj = new Date(`${date}T${time}`);
+                        endDateObj.setHours(endDateObj.getHours() + 1);
+                        const endHours = String(endDateObj.getHours()).padStart(2, '0');
+                        const endMinutes = String(endDateObj.getMinutes()).padStart(2, '0');
+                        endDate = `${date.replace(/-/g, '')}T${endHours}${endMinutes}00`;
+                    }
+                    
+                    icsContent += `BEGIN:VEVENT\n`;
+                    icsContent += `SUMMARY:${title}\n`;
+                    icsContent += `LOCATION:${location}\n`;
+                    icsContent += `DTSTART:${startDate}\n`;
+                    icsContent += `DTEND:${endDate}\n`;
+                    icsContent += `DESCRIPTION:${description.replace(/\n/g, '\\n')}\n`;
+                    icsContent += `END:VEVENT\n`;
+                }
+            });
+
+            icsContent += `END:VCALENDAR`;
+
+            const isAndroid = /android/i.test(navigator.userAgent);
+
+            if (isAndroid) {
+                // For Android, creating a Blob and clicking a link without a 'download' attribute
+                // is a reliable method to trigger the "Open with..." calendar prompt.
+                const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                document.body.appendChild(link);
+                link.click();
+                
+                // Clean up by removing the link and revoking the object URL after a short delay.
+                setTimeout(() => {
+                    document.body.removeChild(link);
+                    window.URL.revokeObjectURL(url);
+                }, 100);
+            } else {
+                // For iOS and desktops, the Blob method with a 'download' attribute works perfectly.
+                const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'events.ics';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
             }
-
-            // Create .ics file content
-            const icsContent = `BEGIN:VCALENDAR
-VERSION:2.0
-BEGIN:VEVENT
-SUMMARY:${title}
-LOCATION:${location}
-DTSTART:${startDate}
-DTEND:${endDate}
-DESCRIPTION:Event added via Event Snap
-END:VEVENT
-END:VCALENDAR`;
-
-            // Create a blob and trigger download
-            const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(blob);
-            link.download = 'event.ics';
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
         }
 
         // --- Helper Functions ---
+        function showToast(message) {
+            const toastContainer = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = 'bg-blue-600 text-white font-bold py-3 px-5 rounded-lg shadow-xl animate-fade-in-out';
+            toast.textContent = message;
+            toastContainer.appendChild(toast);
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        const calculateHash = async (file) => {
+            const buffer = await file.arrayBuffer();
+            const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            return hashHex;
+        };
+        
         const toBase64 = file => new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.readAsDataURL(file);
@@ -310,3 +424,9 @@ END:VCALENDAR`;
     </script>
 </body>
 </html>
+
+
+
+
+
+
