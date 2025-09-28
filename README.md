@@ -1,4 +1,4 @@
-# 📸 Event Snap - Batch Scanner  
+# 📸 Event Snap - Batch Scanner - Try here: https://auto-events-smoky.vercel.app/
 
 Event Snap is a lightweight web app that lets users **batch upload, scan, and extract event details from multiple flyers** at once. It automatically parses flyer content into structured event data (title, date, time, location, description) and allows users to **add all events directly to their calendar** in a single click.  
 
@@ -64,6 +64,4 @@ This tool automates the process, **saving time, reducing errors, and improving p
 - Skills: **Product Management, Problem-Solving, User-Centered Design, AI Integration, Rapid Prototyping, Initiative & Ownership**  
 
 ---
-
-Would you like me to also **rewrite this as a LinkedIn project post** (storytelling style, showing initiative & problem-solving) so it doubles as a portfolio piece?
 
